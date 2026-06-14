@@ -1,0 +1,1205 @@
+<!DOCTYPE html>
+<html lang="en" class="h-full">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AuraWrite v1: Simple, Cute Mood Journal</title>
+    
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        cozy: {
+                            bg: '#FAF8F5',       // Soft warm cream
+                            paper: '#FFFFFF',    // Crisp sheet white
+                            ink: '#2B231F',      // Rich dark espresso ink outline
+                            border: '#E8DFD1',   // Cute binder divider tan
+                            grid: '#F2ECE2',     // Very soft ledger lines
+                            accentPink: '#FCD8D4',// Warm strawberry tape
+                            accentMint: '#DDF4E4',// Sweet peppermint tape
+                            
+                            // Vivid emotional text colors (no backgrounds, optimized for high legibility on light sheets)
+                            joy: '#D96B00',      
+                            sadness: '#1E56DE',  
+                            anger: '#D62222',    
+                            fear: '#7E22CE',     
+                            love: '#DB2777',     
+                            peace: '#047857'     
+                        }
+                    },
+                    fontFamily: {
+                        sans: ['Quicksand', 'Nunito', 'sans-serif']
+                    }
+                }
+            }
+        }
+    </script>
+    
+    <!-- Google Fonts: Quicksand for cute rounded text -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Quicksand:wght@400;600;700;900&display=swap" rel="stylesheet">
+    
+    <!-- Font Awesome Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
+    <!-- Tone.js for real-time sound synthesizers -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/tone/14.8.49/Tone.min.js"></script>
+
+    <!-- Custom Stylings for Scrapbook feel -->
+    <style>
+        ::-webkit-scrollbar {
+            width: 12px;
+            height: 12px;
+        }
+        ::-webkit-scrollbar-track {
+            background: #FAF8F5;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #2B231F;
+            border: 4px solid #FAF8F5;
+            border-radius: 12px;
+        }
+
+        /* Thicker comic cartoon shadows */
+        .shadow-tactile {
+            box-shadow: 6px 6px 0px 0px #2B231F;
+        }
+        .shadow-hover:hover {
+            transform: translate(-2px, -2px);
+            box-shadow: 8px 8px 0px 0px #2B231F;
+        }
+
+        /* Lined writing ledger lines */
+        .writing-lines {
+            background-color: #ffffff;
+            background-image: linear-gradient(#F5EDE0 2px, transparent 2px);
+            background-size: 100% 40px;
+        }
+
+        /* Washi tape details */
+        .washi-tape-1 {
+            background: rgba(252, 216, 212, 0.95);
+            background-image: repeating-linear-gradient(45deg, transparent, transparent 8px, rgba(255,255,255,0.4) 8px, rgba(255,255,255,0.4) 16px);
+            transform: rotate(-1.5deg);
+            border: 3px solid #2B231F;
+        }
+
+        /* Interactive highlighted text hover effect */
+        .highlight-inline {
+            font-weight: 800;
+            cursor: pointer;
+            display: inline-block;
+            transition: transform 0.15s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            padding: 0 1px;
+        }
+        .highlight-inline:hover {
+            transform: scale(1.15) rotate(1deg);
+        }
+
+        /* Simple animation loops */
+        @keyframes float-soft {
+            0%, 100% { transform: translateY(0px); }
+            50% { transform: translateY(-5px); }
+        }
+        .animate-soft-float {
+            animation: float-soft 4s infinite ease-in-out;
+        }
+    </style>
+</head>
+<body class="bg-cozy-bg text-cozy-ink min-h-screen font-sans flex flex-col p-4 md:p-6 selection:bg-cozy-accentPink selection:text-cozy-ink">
+
+    <!-- HEADER BAR WITH NAV TABS -->
+    <header class="max-w-7xl mx-auto w-full mb-6 relative z-30">
+        <div class="flex flex-col md:flex-row justify-between items-center border-4 border-cozy-ink bg-white p-5 rounded-[2rem] shadow-tactile gap-4">
+            
+            <!-- Branding -->
+            <div class="flex items-center gap-3">
+                <div class="w-12 h-12 rounded-xl bg-cozy-accentPink flex items-center justify-center border-3 border-cozy-ink shadow-sm animate-soft-float">
+                    <i class="fa-solid fa-pen-fancy text-xl text-cozy-ink"></i>
+                </div>
+                <div>
+                    <h1 class="text-2xl font-black tracking-tight text-cozy-ink">AuraWrite <span class="text-xs bg-cozy-accentMint border-2 border-cozy-ink px-2 py-0.5 rounded-full uppercase font-black">v1.0</span></h1>
+                    <p class="text-xs font-bold text-cozy-ink/60">Your clean, cozy interactive mental diary</p>
+                </div>
+            </div>
+
+            <!-- Tabs Navigation -->
+            <nav class="flex items-center gap-1 bg-cozy-bg p-1 border-3 border-cozy-ink rounded-2xl flex-wrap">
+                <button onclick="switchTab('home')" id="tab-btn-home" class="px-4 py-2 text-xs font-black rounded-xl transition flex items-center gap-2 bg-white border-2 border-cozy-ink shadow-sm">
+                    <i class="fa-solid fa-house text-cozy-joy"></i>
+                    <span>Home Journal</span>
+                </button>
+                <button onclick="switchTab('lexicon')" id="tab-btn-lexicon" class="px-4 py-2 text-xs font-black rounded-xl transition flex items-center gap-2 text-cozy-ink/60 hover:text-cozy-ink">
+                    <i class="fa-solid fa-book-open text-cozy-love"></i>
+                    <span>Word Registry</span>
+                </button>
+                <button onclick="switchTab('settings')" id="tab-btn-settings" class="px-4 py-2 text-xs font-black rounded-xl transition flex items-center gap-2 text-cozy-ink/60 hover:text-cozy-ink">
+                    <i class="fa-solid fa-sliders text-cozy-peace"></i>
+                    <span>Sound & Config</span>
+                </button>
+            </nav>
+        </div>
+    </header>
+
+    <!-- MAIN VIEWS WRAPPER -->
+    <main class="max-w-7xl mx-auto w-full flex-grow relative z-10 flex flex-col items-stretch">
+
+        <!-- TAB 1: HOME JOURNAL (WRITE & VIEW SIDE BY SIDE) -->
+        <div id="tab-view-home" class="grid grid-cols-1 lg:grid-cols-12 gap-8 items-stretch w-full">
+            
+            <!-- Left Column: Input Panel (Inkwell Studio) -->
+            <section class="lg:col-span-5 flex flex-col">
+                <div class="bg-white border-4 border-cozy-ink rounded-[2rem] p-6 shadow-tactile relative flex flex-col flex-grow">
+                    
+                    <!-- Decorative Binder Rings (Positioned correctly, never overlapping textareas) -->
+                    <div class="absolute right-4 top-10 bottom-10 flex flex-col justify-between pointer-events-none z-20">
+                        <span class="w-4 h-4 rounded-full bg-cozy-bg border-3 border-cozy-ink"></span>
+                        <span class="w-4 h-4 rounded-full bg-cozy-bg border-3 border-cozy-ink"></span>
+                        <span class="w-4 h-4 rounded-full bg-cozy-bg border-3 border-cozy-ink"></span>
+                        <span class="w-4 h-4 rounded-full bg-cozy-bg border-3 border-cozy-ink"></span>
+                        <span class="w-4 h-4 rounded-full bg-cozy-bg border-3 border-cozy-ink"></span>
+                    </div>
+
+                    <!-- Inner Card Header -->
+                    <div class="flex justify-between items-center pb-3 border-b-3 border-dashed border-cozy-border mb-4">
+                        <h2 class="text-xs uppercase font-extrabold tracking-wider text-cozy-ink/60 flex items-center gap-1.5">
+                            <i class="fa-solid fa-feather-pointed text-cozy-joy"></i> New Entry Studio
+                        </h2>
+                        <button onclick="clearEditor()" class="text-[10px] text-cozy-ink/50 hover:text-rose-600 font-extrabold transition flex items-center gap-1">
+                            <i class="fa-solid fa-arrow-rotate-left"></i> Reset Paper
+                        </button>
+                    </div>
+
+                    <!-- Inputs Form -->
+                    <div class="flex flex-col gap-4">
+                        <div class="flex flex-col gap-1">
+                            <label class="text-[10px] uppercase font-black text-cozy-ink/50">Chapter Title</label>
+                            <input id="entry-title" type="text" placeholder="An afternoon breeze..." class="bg-cozy-bg border-3 border-cozy-ink rounded-xl px-3 py-2 text-xs font-bold outline-none font-sans text-cozy-ink placeholder-cozy-ink/40">
+                        </div>
+
+                        <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                            <div class="flex flex-col gap-1">
+                                <label class="text-[10px] uppercase font-black text-cozy-ink/50">Primary Emotion Vibe</label>
+                                <select id="entry-mood-select" class="bg-cozy-bg border-3 border-cozy-ink rounded-xl px-2 py-2 text-xs font-bold outline-none cursor-pointer font-sans text-cozy-ink">
+                                    <option value="joy">✨ Joyful</option>
+                                    <option value="sadness">🌧️ Weary / Sad</option>
+                                    <option value="anger">🔥 Angry / Snappy</option>
+                                    <option value="fear">🌪️ Apprehensive</option>
+                                    <option value="love">💗 Tender / Cozy</option>
+                                    <option value="peace" selected>🌿 Calm / Peaceful</option>
+                                </select>
+                            </div>
+                            <div class="flex flex-col gap-1">
+                                <label class="text-[10px] uppercase font-black text-cozy-ink/50">Date</label>
+                                <input id="entry-date" type="date" class="bg-cozy-bg border-3 border-cozy-ink rounded-xl px-2 py-1.5 text-xs font-bold outline-none font-sans text-cozy-ink">
+                            </div>
+                        </div>
+
+                        <!-- Score slider -->
+                        <div class="bg-cozy-bg border-3 border-cozy-ink rounded-xl p-3 flex flex-col gap-1.5">
+                            <div class="flex justify-between items-center text-[10px] font-black uppercase text-cozy-ink/50">
+                                <span>Day Energy Meter:</span>
+                                <span id="energy-rating-badge" class="bg-white border-2 border-cozy-ink text-[11px] px-2 py-0.5 rounded-lg text-cozy-joy font-black">9/10 (Super Care!) 🌟</span>
+                            </div>
+                            <input id="entry-energy-slider" type="range" min="1" max="10" value="9" oninput="updateRealtimeIndicators()" class="w-full accent-cozy-ink bg-cozy-border h-2 rounded-lg cursor-pointer">
+                        </div>
+                    </div>
+
+                    <!-- Prompts Box -->
+                    <div class="mt-4">
+                        <span class="text-[9px] uppercase font-black text-cozy-ink/40 tracking-wider block mb-1.5">Try a mood template:</span>
+                        <div class="flex flex-wrap gap-1.5">
+                            <button onclick="applySampleTemplate('joy')" class="bg-amber-50 hover:bg-amber-100 border-2 border-cozy-joy text-[9px] font-black text-cozy-joy px-2.5 py-1 rounded-lg transition">✨ Joy</button>
+                            <button onclick="applySampleTemplate('sadness')" class="bg-blue-50 hover:bg-blue-100 border-2 border-cozy-sadness text-[9px] font-black text-cozy-sadness px-2.5 py-1 rounded-lg transition">🌧️ Weary</button>
+                            <button onclick="applySampleTemplate('love')" class="bg-pink-50 hover:bg-pink-100 border-2 border-cozy-love text-[9px] font-black text-cozy-love px-2.5 py-1 rounded-lg transition">💗 Cozy</button>
+                            <button onclick="applySampleTemplate('peace')" class="bg-emerald-50 hover:bg-emerald-100 border-2 border-cozy-peace text-[9px] font-black text-cozy-peace px-2.5 py-1 rounded-lg transition">🌿 Calm</button>
+                        </div>
+                    </div>
+
+                    <!-- Lined Text Editor with consistent Quicksand font -->
+                    <div class="flex-grow flex flex-col relative mt-4">
+                        <textarea id="diary-editor" placeholder="Pour your cozy thoughts onto this paper... Any registered words will automatically highlight in bold vibrant colors on the right-hand feed!" class="flex-grow w-full bg-transparent border-0 text-cozy-ink placeholder-cozy-ink/40 text-sm md:text-base leading-[40px] py-1 resize-none outline-none font-sans font-bold writing-lines h-72"></textarea>
+                    </div>
+
+                    <!-- Card footer button actions -->
+                    <div class="flex justify-between items-center mt-4 pt-3 border-t-2 border-cozy-border">
+                        <span id="editor-word-count" class="text-[10px] font-black text-cozy-ink/50">0 Words written</span>
+                        <button onclick="saveDiaryEntry()" class="bg-cozy-accentMint hover:bg-emerald-200 text-cozy-ink border-3 border-cozy-ink px-5 py-2 rounded-xl text-xs font-black shadow-sm transition flex items-center gap-1.5">
+                            <i class="fa-solid fa-check-circle"></i>
+                            <span>Save to Scrapbook</span>
+                        </button>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Right Column: Scrolling Live Preview & Saved History Feed (7 Columns) -->
+            <section class="lg:col-span-7 flex flex-col gap-6">
+                
+                <!-- Live Preview Draft Box -->
+                <div class="bg-white border-4 border-cozy-ink rounded-[2rem] p-6 shadow-tactile relative overflow-hidden">
+                    <div class="absolute -top-3 left-6 washi-tape-1 px-4 py-1 z-10">
+                        <span class="text-[9px] font-black uppercase text-cozy-ink tracking-wider">✏️ Live Preview Draft</span>
+                    </div>
+
+                    <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center mt-2 mb-3 pb-2 border-b-2 border-dashed border-cozy-border gap-2">
+                        <div>
+                            <h3 id="draft-title" class="text-lg font-black text-cozy-ink font-sans">An Afternoon Breeze...</h3>
+                            <p id="draft-meta" class="text-[10px] font-bold text-cozy-ink/50">🌿 Calm / Peaceful | June 14, 2026</p>
+                        </div>
+
+                        <!-- Live scores indicators -->
+                        <div class="flex gap-2">
+                            <div class="bg-cozy-bg border-2 border-cozy-ink px-2 py-1 rounded-lg text-center min-w-16">
+                                <p class="text-[8px] font-black text-cozy-ink/50 leading-tight uppercase">Energy</p>
+                                <span id="draft-energy-badge" class="text-xs font-black text-cozy-joy">9/10</span>
+                            </div>
+                            <div class="bg-cozy-bg border-2 border-cozy-ink px-2 py-1 rounded-lg text-center min-w-16">
+                                <p class="text-[8px] font-black text-cozy-ink/50 leading-tight uppercase">Harmony</p>
+                                <span id="draft-harmony-badge" class="text-xs font-black text-cozy-peace">0%</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Output formatted text display -->
+                    <div id="draft-text-output" class="font-sans text-sm md:text-base leading-relaxed text-cozy-ink font-semibold max-h-48 overflow-y-auto">
+                        <!-- Instantly compiled highlighted texts -->
+                    </div>
+                </div>
+
+                <!-- Beautiful Saved Entries Scrapbook List -->
+                <div class="flex flex-col gap-1 mb-2">
+                    <h2 class="text-xs uppercase font-extrabold tracking-widest text-cozy-ink/60 flex items-center gap-1.5">
+                        <i class="fa-solid fa-bookmark text-cozy-love"></i> Saved Scrapbook Feed
+                    </h2>
+                </div>
+
+                <!-- Feed Container -->
+                <div id="entries-feed" class="flex flex-col gap-6 max-h-[60vh] overflow-y-auto pr-1">
+                    <!-- Loaded dynamically via Javascript -->
+                </div>
+            </section>
+        </div>
+
+        <!-- TAB 2: WORD REGISTRY (LEXICON MANAGEMENT) -->
+        <div id="tab-view-lexicon" class="hidden flex-col gap-6 w-full">
+            <div class="bg-white border-4 border-cozy-ink rounded-[2rem] p-7 shadow-tactile flex flex-col gap-6">
+                
+                <!-- Tab Header Info -->
+                <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center border-b-3 pb-4 border-dashed border-cozy-border gap-4">
+                    <div>
+                        <h2 class="text-xl font-black text-cozy-ink flex items-center gap-2">
+                            <i class="fa-solid fa-book-open text-cozy-joy animate-soft-float"></i>
+                            <span>Personal Word Registry</span>
+                        </h2>
+                        <p class="text-xs font-bold text-cozy-ink/50">Add or modify specific terms detected by the engine. Words will highlight with custom colors.</p>
+                    </div>
+
+                    <!-- Register form reveal button -->
+                    <button onclick="toggleWordRegistrationForm()" class="bg-cozy-ink hover:bg-cozy-ink/90 text-white px-4 py-2 rounded-xl text-xs font-black border-2 border-cozy-ink transition flex items-center gap-1.5 shadow-sm">
+                        <i class="fa-solid fa-plus text-[10px]"></i>
+                        <span>Register Custom Word</span>
+                    </button>
+                </div>
+
+                <!-- Form to Register custom word (Interactive overlay style) -->
+                <div id="custom-word-registration-box" class="hidden bg-cozy-bg border-3 border-cozy-ink p-5 rounded-2xl flex-col gap-4">
+                    <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                        <div class="flex flex-col gap-1">
+                            <label class="text-[10px] font-black uppercase text-cozy-ink/60">The Word</label>
+                            <input id="input-new-word" type="text" placeholder="e.g., whimsical" class="bg-white border-3 border-cozy-ink rounded-xl px-3 py-2 text-xs font-bold outline-none font-sans text-cozy-ink">
+                        </div>
+                        <div class="flex flex-col gap-1">
+                            <label class="text-[10px] font-black uppercase text-cozy-ink/60">Aura Color Theme</label>
+                            <select id="input-new-category" class="bg-white border-3 border-cozy-ink rounded-xl px-3 py-2 text-xs font-bold outline-none cursor-pointer font-sans text-cozy-ink">
+                                <option value="joy">☀️ Joy (Vibrant Orange)</option>
+                                <option value="sadness">🌧️ Sadness (Deep Blue)</option>
+                                <option value="anger">🔥 Anger (Crimson Red)</option>
+                                <option value="fear">🌪️ Fear (Royal Purple)</option>
+                                <option value="love">💗 Love (Strawberry Pink)</option>
+                                <option value="peace">🌿 Peace (Forest Green)</option>
+                            </select>
+                        </div>
+                        <div class="flex items-end">
+                            <button onclick="addNewCustomWord()" class="w-full bg-cozy-accentMint hover:bg-emerald-200 border-3 border-cozy-ink py-2 text-xs font-black rounded-xl transition flex items-center justify-center gap-1.5 shadow-sm">
+                                <i class="fa-solid fa-file-circle-plus"></i>
+                                <span>Register to Database</span>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Category Filtering Buttons -->
+                <div class="flex items-center gap-1.5 overflow-x-auto pb-2 border-b-2 border-cozy-border">
+                    <span class="text-[10px] font-black uppercase text-cozy-ink/40 mr-2 whitespace-nowrap">Filter view:</span>
+                    <button onclick="filterLexiconCards('all')" class="lexicon-filter-btn px-3 py-1.5 rounded-xl text-xs font-black bg-cozy-ink text-white border-2 border-cozy-ink whitespace-nowrap">All Words</button>
+                    <button onclick="filterLexiconCards('joy')" class="lexicon-filter-btn px-3 py-1.5 rounded-xl text-xs font-black bg-cozy-bg text-cozy-joy hover:bg-amber-50 border border-cozy-ink/15 whitespace-nowrap">Joy</button>
+                    <button onclick="filterLexiconCards('sadness')" class="lexicon-filter-btn px-3 py-1.5 rounded-xl text-xs font-black bg-cozy-bg text-cozy-sadness hover:bg-blue-50 border border-cozy-ink/15 whitespace-nowrap">Sadness</button>
+                    <button onclick="filterLexiconCards('anger')" class="lexicon-filter-btn px-3 py-1.5 rounded-xl text-xs font-black bg-cozy-bg text-cozy-anger hover:bg-red-50 border border-cozy-ink/15 whitespace-nowrap">Anger</button>
+                    <button onclick="filterLexiconCards('fear')" class="lexicon-filter-btn px-3 py-1.5 rounded-xl text-xs font-black bg-cozy-bg text-cozy-fear hover:bg-purple-50 border border-cozy-ink/15 whitespace-nowrap">Fear</button>
+                    <button onclick="filterLexiconCards('love')" class="lexicon-filter-btn px-3 py-1.5 rounded-xl text-xs font-black bg-cozy-bg text-cozy-love hover:bg-pink-50 border border-cozy-ink/15 whitespace-nowrap">Love</button>
+                    <button onclick="filterLexiconCards('peace')" class="lexicon-filter-btn px-3 py-1.5 rounded-xl text-xs font-black bg-cozy-bg text-cozy-peace hover:bg-emerald-50 border border-cozy-ink/15 whitespace-nowrap">Peace</button>
+                </div>
+
+                <!-- Registry Grid representation -->
+                <div id="lexicon-items-wrapper" class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-3 min-h-[300px]">
+                    <!-- Instanced programmatically -->
+                </div>
+            </div>
+        </div>
+
+        <!-- TAB 3: SYSTEM SETTINGS -->
+        <div id="tab-view-settings" class="hidden flex-col gap-6 w-full">
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-8">
+                
+                <!-- Left panel: Audio control options -->
+                <div class="md:col-span-2 bg-white border-4 border-cozy-ink rounded-[2rem] p-7 shadow-tactile flex flex-col gap-5">
+                    <h2 class="text-xl font-black text-cozy-ink flex items-center gap-2">
+                        <i class="fa-solid fa-music text-cozy-peace animate-soft-float"></i>
+                        <span>Music Box Config</span>
+                    </h2>
+                    <p class="text-xs font-bold text-cozy-ink/50">Tune the procedural synthesizer sounds generated in the background by AuraWrite.</p>
+
+                    <!-- Control Settings Grid -->
+                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 mt-2">
+                        <div class="bg-cozy-bg border-3 border-cozy-ink p-4 rounded-xl flex flex-col gap-3">
+                            <label class="text-[10px] font-black uppercase text-cozy-ink/50">Engine Toggle</label>
+                            <div class="flex items-center justify-between">
+                                <span class="text-xs font-black">Enable Synthesizer:</span>
+                                <button onclick="toggleAudioSystem()" id="btn-audio-status" class="bg-cozy-accentMint text-cozy-ink border-2 border-cozy-ink px-4 py-1.5 rounded-xl text-xs font-black transition">
+                                    ON <i class="fa-solid fa-volume-high ml-1"></i>
+                                </button>
+                            </div>
+                        </div>
+
+                        <div class="bg-cozy-bg border-3 border-cozy-ink p-4 rounded-xl flex flex-col gap-2">
+                            <label class="text-[10px] font-black uppercase text-cozy-ink/50">Volume Control</label>
+                            <input id="audio-volume" type="range" min="-24" max="0" value="-8" oninput="adjustSystemVolume()" class="w-full accent-cozy-ink bg-cozy-border h-2 rounded-lg cursor-pointer mt-2">
+                            <div class="flex justify-between text-[9px] font-black text-cozy-ink/40">
+                                <span>Quiet</span>
+                                <span>Medium</span>
+                                <span>Loud</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Detailed instructions on highlights -->
+                    <div class="bg-cozy-bg border-3 border-cozy-ink p-5 rounded-2xl mt-2 flex flex-col gap-3">
+                        <h4 class="text-xs font-black uppercase tracking-wider text-cozy-ink">How Aura Highlights & Scores:</h4>
+                        <div class="text-xs text-cozy-ink/70 leading-relaxed flex flex-col gap-2 font-semibold">
+                            <p><strong>Highlighting Words:</strong> The engine automatically parses text on the home screen against your personal registry. Positive or neutral keywords show up bright and stylized in absolute bold colors with no covers to maintain a readable scrapbook sheet.</p>
+                            <p><strong>Sound Generation:</strong> Hovering or tapping colored phrases in the list triggers immediate plucky minor or major keys built via custom envelopes to play only for a tiny fraction of time so sounds stay crisp.</p>
+                            <p><strong>Scoring day:</strong> The Energy bar captures physical/mental battery (1-10 slider), and the Harmony % measures the vocabulary depth, descriptor density, and structural variety in your logs.</p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Right panel: System administration details -->
+                <div class="bg-white border-4 border-cozy-ink rounded-[2rem] p-7 shadow-tactile flex flex-col gap-4 justify-between">
+                    <div class="flex flex-col gap-4">
+                        <h2 class="text-xl font-black text-cozy-ink flex items-center gap-2">
+                            <i class="fa-solid fa-gear text-cozy-joy"></i>
+                            <span>Database Tool</span>
+                        </h2>
+                        <p class="text-xs font-bold text-cozy-ink/50">Manage local storage backups, backups from prior sessions, or restore initial state values.</p>
+
+                        <div class="flex flex-col gap-2.5 mt-2">
+                            <button onclick="restoreInitialDatabase()" class="bg-cozy-bg hover:bg-cozy-border text-cozy-ink border-2 border-cozy-ink w-full py-2.5 rounded-xl text-xs font-black transition flex items-center justify-center gap-2 shadow-sm">
+                                <i class="fa-solid fa-arrows-rotate text-cozy-joy"></i>
+                                <span>Restore Default Words</span>
+                            </button>
+                            <button onclick="clearAllDiaryEntries()" class="bg-rose-50 hover:bg-rose-100 text-rose-800 border-2 border-rose-200 w-full py-2.5 rounded-xl text-xs font-black transition flex items-center justify-center gap-2 shadow-sm">
+                                <i class="fa-solid fa-trash"></i>
+                                <span>Clear Journal Feed</span>
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Signature stamp footer inside card -->
+                    <div class="border-t-2 border-cozy-border pt-4 text-center">
+                        <span class="text-[10px] font-black text-cozy-ink/30 uppercase tracking-widest block">AuraWrite v1.0.0</span>
+                        <span class="text-[9px] font-bold text-cozy-ink/40">Secure & Securely Local</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <!-- FOOTER STAMP -->
+    <footer class="max-w-7xl mx-auto w-full mt-10 border-t-3 border-dashed border-cozy-ink py-5 text-center text-xs text-cozy-ink/40 font-black flex flex-col sm:flex-row justify-between items-center gap-2 relative z-10">
+        <p>🌸 AuraWrite — Built for warm reflections & peaceful days.</p>
+        <p>All data stays securely stored in your local browser sandbox.</p>
+    </footer>
+
+    <!-- STICKY TOAST NOTIFICATIONS -->
+    <div id="toast-wrapper" class="fixed bottom-6 right-6 z-50 flex flex-col gap-3 pointer-events-none"></div>
+
+    <!-- MAIN SCRIPTS -->
+    <script>
+        // Setup default emotional intermediate vocabularies
+        let defaultLexicon = {
+            joy: [
+                'happy', 'joy', 'joyful', 'excited', 'elated', 'cheerful', 'bright', 'amazing', 'wonderful', 
+                'smile', 'smiling', 'laugh', 'laughing', 'celebrate', 'glad', 'sunny', 'grateful', 'blessed', 
+                'thrive', 'delighted', 'radiant', 'blissful', 'glowing', 'beaming', 'vibrant', 'splendid', 'fabulous'
+            ],
+            sadness: [
+                'sad', 'lonely', 'sorrow', 'crying', 'cried', 'tears', 'gloomy', 'depressed', 'melancholy', 
+                'brokenhearted', 'heartbroken', 'hurting', 'pain', 'empty', 'hopeless', 'grieving', 'mourn',
+                'weary', 'downcast', 'somber', 'blue', 'teardrop', 'dispirited', 'forlorn', 'dejected', 'sigh', 'aching'
+            ],
+            anger: [
+                'angry', 'mad', 'furious', 'rage', 'frustrated', 'irritated', 'hated', 'hate', 'pissed', 'bitter', 
+                'offended', 'annoyed', 'scream', 'screamed', 'yelled', 'hostile', 'disgust', 'resent',
+                'snappy', 'grumpy', 'fuming', 'seething', 'resentful', 'cross', 'indignant', 'fretting', 'heated'
+            ],
+            fear: [
+                'scared', 'afraid', 'anxious', 'worried', 'dread', 'panic', 'terror', 'terrified', 'nervous', 'stress', 
+                'stressed', 'uneasy', 'horror', 'fright', 'apprehensive', 'suspicious', 'shaking', 'tense', 'jittery',
+                'unsteady', 'shaky', 'dreadful', 'panicked', 'fearful', 'distressed', 'overwhelmed', 'paralyzed'
+            ],
+            love: [
+                'love', 'loved', 'loving', 'sweet', 'warmth', 'cozy', 'hug', 'hugs', 'kiss', 'affection', 
+                'adorable', 'cherish', 'companion', 'caring', 'sweetheart', 'adore', 'kind', 'kindness',
+                'passion', 'tender', 'compassionate', 'fond', 'devoted', 'admire', 'gentle', 'precious', 'empathy'
+            ],
+            peace: [
+                'peace', 'peaceful', 'calm', 'quiet', 'serene', 'tranquil', 'solitude', 'harmonious', 'balanced', 'rest', 
+                'resting', 'relax', 'relaxed', 'mindful', 'gently', 'softly', 'stillness', 'content', 'soothing',
+                'composed', 'untroubled', 'placid', 'mellow', 'smooth', 'silence', 'flow', 'steadiness', 'aligned'
+            ]
+        };
+
+        const staticTemplates = {
+            joy: "Today is a beautiful, sunny, and radiant morning! I am feeling incredibly happy and grateful to celebrate. I spent the day with friends, and our hours were filled with vibrant laughing and smiling. My soul is glowing with splendid optimism!",
+            sadness: "I've been feeling weary and downcast this afternoon. It is a lonely hour, and the gloomy rain matches the heavy melancholy in my heart. Watching the teardrops on the window feels somber and aching, but pensive solitude helps me breathe.",
+            love: "The room feels warm and cozy with the soft fireplace burning. I adore our gentle conversation, and I cherish these tender hugs. Caring for you makes me feel deeply loved and warmhearted. You are my companion and sweetheart.",
+            peace: "I feel incredibly serene and tranquil tonight. Taking a slow, mindful breath brings a gentle stillness to my thoughts. Resting by the quiet garden allows my mind to unwind, finding harmonious peace and aligned calmness."
+        };
+
+        // State Database
+        let diaryEntries = [];
+        let activeTab = 'home';
+        let activeLexiconFilter = 'all';
+        let customLexicon = {};
+        
+        // Sound Engine Options
+        let isAudioEngineActive = true;
+        let isAudioInitialized = false;
+        let chimeSynthesizers = {};
+
+        window.onload = function() {
+            loadDatabaseFromStorage();
+            setDefaultDate();
+            
+            // Build UI structures
+            renderLexiconCards();
+            renderEntriesFeed();
+
+            // Setup listeners to live compile
+            const textEditor = document.getElementById('diary-editor');
+            const titleInput = document.getElementById('entry-title');
+            const moodSelect = document.getElementById('entry-mood-select');
+            const dateInput = document.getElementById('entry-date');
+
+            [textEditor, titleInput, moodSelect, dateInput].forEach(element => {
+                element.addEventListener('input', () => {
+                    updateRealtimeIndicators();
+                });
+            });
+
+            // Put a warm default template inside the box to immediately showcase the highlighted preview
+            if (!textEditor.value) {
+                titleInput.value = "A Peacefully Gentle Afternoon Reflection";
+                textEditor.value = "Today is a wonderfully serene afternoon. Sitting on the porch, I listen to the quiet rain. I feel cozy and tranquil as I read. My thoughts, which were once anxious and stressed, are now filled with beautiful peace and stillness. I feel incredibly blessed, grateful, and loved.";
+                moodSelect.value = "peace";
+            }
+
+            updateRealtimeIndicators();
+            triggerToast("AuraWrite Loaded Successfully!", "success");
+        };
+
+        function setDefaultDate() {
+            const today = new Date().toISOString().split('T')[0];
+            document.getElementById('entry-date').value = today;
+        }
+
+        /* ==========================================================
+           STREAMING_CHUNK: Managing database states...
+           ========================================================== */
+        function loadDatabaseFromStorage() {
+            try {
+                // Entries Storage
+                const rawEntries = localStorage.getItem('aurawrite_entries_v1');
+                if (rawEntries) {
+                    diaryEntries = JSON.parse(rawEntries);
+                } else {
+                    // Populate with basic template
+                    diaryEntries = [
+                        {
+                            id: 1718000000000,
+                            title: "My Joyful Sunrise Morning",
+                            text: "I woke up feeling radiant and incredibly happy! The morning sky was sunny, and I couldn't help but smile. I am so grateful to celebrate this life, and I feel blessed to have wonderful and sweet companions around me.",
+                            date: new Date().toISOString().split('T')[0],
+                            mood: "joy",
+                            energy: 10,
+                            harmony: 82,
+                            timestamp: new Date().toISOString()
+                        },
+                        {
+                            id: 1717900000000,
+                            title: "Tender Evening Thoughts",
+                            text: "I am resting quietly in my room. Everything is serene and peaceful, and the space feels so cozy. I cherish these quiet hours of solitude. Feeling loved, warm, and gentle.",
+                            date: new Date().toISOString().split('T')[0],
+                            mood: "love",
+                            energy: 8,
+                            harmony: 90,
+                            timestamp: new Date().toISOString()
+                        }
+                    ];
+                }
+
+                // Lexicon Storage
+                const rawLexicon = localStorage.getItem('aurawrite_lexicon_v1');
+                if (rawLexicon) {
+                    customLexicon = JSON.parse(rawLexicon);
+                } else {
+                    customLexicon = JSON.parse(JSON.stringify(defaultLexicon));
+                }
+            } catch (err) {
+                console.error("Local Storage database failed to load: ", err);
+                customLexicon = JSON.parse(JSON.stringify(defaultLexicon));
+            }
+        }
+
+        function persistDatabase() {
+            try {
+                localStorage.setItem('aurawrite_entries_v1', JSON.stringify(diaryEntries));
+                localStorage.setItem('aurawrite_lexicon_v1', JSON.stringify(customLexicon));
+            } catch (err) {
+                console.error("Failed writing state to browser: ", err);
+            }
+        }
+
+        /* ==========================================================
+           STREAMING_CHUNK: Handling active Tab routing...
+           ========================================================== */
+        function switchTab(targetTab) {
+            activeTab = targetTab;
+
+            // Hide all tab views
+            document.getElementById('tab-view-home').classList.add('hidden');
+            document.getElementById('tab-view-lexicon').classList.add('hidden');
+            document.getElementById('tab-view-settings').classList.add('hidden');
+
+            // Show active
+            document.getElementById(`tab-view-${targetTab}`).classList.remove('hidden');
+            if (targetTab === 'lexicon') {
+                document.getElementById('tab-view-lexicon').classList.add('flex');
+            } else if (targetTab === 'settings') {
+                document.getElementById('tab-view-settings').classList.add('flex');
+            }
+
+            // Style nav buttons
+            const tabBtnHome = document.getElementById('tab-btn-home');
+            const tabBtnLexicon = document.getElementById('tab-btn-lexicon');
+            const tabBtnSettings = document.getElementById('tab-btn-settings');
+
+            [tabBtnHome, tabBtnLexicon, tabBtnSettings].forEach(btn => {
+                btn.className = "px-4 py-2 text-xs font-black rounded-xl transition flex items-center gap-2 text-cozy-ink/60 hover:text-cozy-ink";
+            });
+
+            const activeBtn = document.getElementById(`tab-btn-${targetTab}`);
+            if (activeBtn) {
+                activeBtn.className = "px-4 py-2 text-xs font-black rounded-xl transition flex items-center gap-2 bg-white border-2 border-cozy-ink shadow-sm text-cozy-ink";
+            }
+
+            // Quick audio initialization gesture context helper
+            verifyAudioInitialization();
+        }
+
+        /* ==========================================================
+           STREAMING_CHUNK: Core Highlight Compiling Engine...
+           ========================================================== */
+        function updateRealtimeIndicators() {
+            const titleText = document.getElementById('entry-title').value.trim() || "An Afternoon Breeze...";
+            const editorText = document.getElementById('diary-editor').value;
+            const moodVal = document.getElementById('entry-mood-select').value;
+            const dateVal = document.getElementById('entry-date').value;
+            const currentEnergyValue = parseInt(document.getElementById('entry-energy-slider').value);
+
+            // 1. Update live preview text output (Live Draft Card)
+            document.getElementById('draft-title').textContent = titleText;
+            
+            let prettyDate = "No Date";
+            if (dateVal) {
+                const parts = dateVal.split('-');
+                const dObj = new Date(parts[0], parts[1] - 1, parts[2]);
+                prettyDate = dObj.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+            }
+
+            const moodLabels = {
+                joy: "✨ Joyful",
+                sadness: "🌧️ Weary / Sad",
+                anger: "🔥 Angry / Snappy",
+                fear: "🌪️ Apprehensive",
+                love: "💗 Tender / Cozy",
+                peace: "🌿 Calm / Peaceful"
+            };
+
+            document.getElementById('draft-meta').textContent = `${moodLabels[moodVal]} | ${prettyDate}`;
+            document.getElementById('draft-text-output').innerHTML = compileHighlightedHTML(editorText);
+
+            // 2. Slider rating labels
+            const ratingsMap = {
+                1: "Weary Sleep 😴", 2: "Low Energy 🌧️", 3: "Under Weather 🌪️", 4: "Quiet Rest 🌿",
+                5: "Unwinding ☕", 6: "Doing Good 👍", 7: "Cozy Warm 💗", 8: "Happy Heart ✨",
+                9: "Super Care! 🌟", 10: "Absolute Spark! 🔥"
+            };
+            document.getElementById('energy-rating-badge').textContent = `${currentEnergyValue}/10 (${ratingsMap[currentEnergyValue]})`;
+            document.getElementById('draft-energy-badge').textContent = `${currentEnergyValue}/10`;
+
+            // 3. Score calculations
+            const harmonyScore = autoCalculateVibeHarmony(editorText);
+            document.getElementById('draft-harmony-badge').textContent = `${harmonyScore}%`;
+
+            // 4. Word count info
+            const wordsCount = editorText.trim().split(/\s+/).filter(Boolean).length;
+            document.getElementById('editor-word-count').textContent = `${wordsCount} Word${wordsCount === 1 ? '' : 's'} written`;
+        }
+
+        function compileHighlightedHTML(text) {
+            if (!text.trim()) {
+                return `<p class="text-cozy-ink/30 font-bold italic py-4 text-center text-xs">Your real-time highlighted thoughts will preview here as you type... 🌸</p>`;
+            }
+
+            // Map vocabulary terms to their respective emotion categories
+            const lexiconWordMap = {};
+            for (const [em, list] of Object.entries(customLexicon)) {
+                list.forEach(w => {
+                    lexiconWordMap[w.toLowerCase().trim()] = em;
+                });
+            }
+
+            const paragraphs = text.split(/\n/);
+            
+            const compiledHtml = paragraphs.map(para => {
+                if (!para.trim()) return "<br>";
+                
+                // Regex word boundary splitter preserving text
+                const tokens = para.split(/(\b[a-zA-Z\d']+\b)/g);
+                
+                const tokenSpans = tokens.map(token => {
+                    const clean = token.toLowerCase().trim();
+                    const emotion = lexiconWordMap[clean];
+                    
+                    if (emotion) {
+                        const styleClass = getEmotionColorClass(emotion);
+                        return `<span class="highlight-inline ${styleClass}" onmouseenter="handleSoundHighlight(this, '${emotion}')">${token}</span>`;
+                    }
+                    return token;
+                });
+
+                return `<p class="mb-3 font-semibold text-sm leading-relaxed">${tokenSpans.join('')}</p>`;
+            });
+
+            return compiledHtml.join('');
+        }
+
+        function getEmotionColorClass(emotion) {
+            const classes = {
+                joy: 'text-cozy-joy',
+                sadness: 'text-cozy-sadness',
+                anger: 'text-cozy-anger',
+                fear: 'text-cozy-fear',
+                love: 'text-cozy-love',
+                peace: 'text-cozy-peace'
+            };
+            return classes[emotion] || 'text-cozy-ink';
+        }
+
+        function autoCalculateVibeHarmony(text) {
+            if (!text.trim()) return 0;
+            const words = text.toLowerCase().split(/\s+/).filter(Boolean);
+            const wordCount = words.length;
+            if (wordCount === 0) return 0;
+
+            const map = {};
+            for (const [em, list] of Object.entries(customLexicon)) {
+                list.forEach(w => { map[w] = em; });
+            }
+
+            let categoryMatchCount = 0;
+            let uniqueCategories = new Set();
+
+            words.forEach(word => {
+                const clean = word.replace(/[.,\/#!$%\^&\*;:{}=\-_`~()]/g,"").trim();
+                if (map[clean]) {
+                    categoryMatchCount++;
+                    uniqueCategories.add(map[clean]);
+                }
+            });
+
+            // Scoring math logic
+            const lengthSubscore = Math.min(40, wordCount * 0.4);
+            const varietySubscore = uniqueCategories.size * 6; // up to 36 points max
+            const densityPercentage = categoryMatchCount / wordCount;
+            const densitySubscore = Math.min(24, densityPercentage * 100);
+
+            return Math.min(100, Math.round(lengthSubscore + varietySubscore + densitySubscore));
+        }
+
+        /* ==========================================================
+           STREAMING_CHUNK: Formatting short sound synths...
+           ========================================================== */
+        async function verifyAudioInitialization() {
+            if (!isAudioInitialized && isAudioEngineActive) {
+                await Tone.start();
+                isAudioInitialized = true;
+                buildPolysynths();
+            }
+        }
+
+        function buildPolysynths() {
+            // "make the sound only run for a while"
+            // Ensure snappy envelope releases so chime doesn't sustain forever
+            const snappyFMSettings = {
+                oscillator: { type: "sine" },
+                envelope: { attack: 0.002, decay: 0.08, sustain: 0, release: 0.1 }
+            };
+
+            chimeSynthesizers.joy = new Tone.PolySynth(Tone.Synth, snappyFMSettings).toDestination();
+            chimeSynthesizers.joy.volume.value = -6;
+
+            chimeSynthesizers.sadness = new Tone.PolySynth(Tone.Synth, {
+                oscillator: { type: "sine" },
+                envelope: { attack: 0.005, decay: 0.12, sustain: 0, release: 0.12 }
+            }).toDestination();
+            chimeSynthesizers.sadness.volume.value = -8;
+
+            chimeSynthesizers.anger = new Tone.PolySynth(Tone.Synth, {
+                oscillator: { type: "triangle" },
+                envelope: { attack: 0.001, decay: 0.05, sustain: 0, release: 0.06 }
+            }).toDestination();
+            chimeSynthesizers.anger.volume.value = -12;
+
+            chimeSynthesizers.fear = new Tone.PolySynth(Tone.FMSynth, {
+                harmonicity: 1.5,
+                modulationIndex: 2,
+                envelope: { attack: 0.004, decay: 0.08, sustain: 0, release: 0.08 }
+            }).toDestination();
+            chimeSynthesizers.fear.volume.value = -10;
+
+            chimeSynthesizers.love = new Tone.PolySynth(Tone.Synth, {
+                oscillator: { type: "triangle" },
+                envelope: { attack: 0.01, decay: 0.15, sustain: 0, release: 0.15 }
+            }).toDestination();
+            chimeSynthesizers.love.volume.value = -6;
+
+            chimeSynthesizers.peace = new Tone.PolySynth(Tone.Synth, {
+                oscillator: { type: "sine" },
+                envelope: { attack: 0.02, decay: 0.18, sustain: 0, release: 0.18 }
+            }).toDestination();
+            chimeSynthesizers.peace.volume.value = -6;
+        }
+
+        function triggerShortChime(emotion) {
+            if (!isAudioEngineActive) return;
+            verifyAudioInitialization().then(() => {
+                const synth = chimeSynthesizers[emotion];
+                if (!synth) return;
+
+                // Little high-pitched magical bell-tree structures
+                const toneMelodies = {
+                    joy: ["G5", "C6", "E6"],
+                    sadness: ["F5", "Ab5", "C6"],
+                    anger: ["F#5", "G5"],
+                    fear: ["C#5", "D5", "G#5"],
+                    love: ["A5", "C#6", "E6"],
+                    peace: ["G5", "B5", "D6"]
+                };
+
+                const notesToPlay = toneMelodies[emotion] || ["C5"];
+                notesToPlay.forEach((note, index) => {
+                    // Stagger triggering very short plucky notes
+                    synth.triggerAttackRelease(note, "32n", Tone.now() + (index * 0.035));
+                });
+            });
+        }
+
+        function handleSoundHighlight(element, emotion) {
+            triggerShortChime(emotion);
+            
+            // Apply bounce effects cleanly
+            element.style.transform = "scale(1.15) rotate(-1.5deg)";
+            element.addEventListener('mouseleave', () => {
+                element.style.transform = "";
+            }, { once: true });
+        }
+
+        /* ==========================================================
+           STREAMING_CHUNK: Managing entries feed save & delete...
+           ========================================================== */
+        function saveDiaryEntry() {
+            const titleVal = document.getElementById('entry-title').value.trim();
+            const textVal = document.getElementById('diary-editor').value.trim();
+            const dateVal = document.getElementById('entry-date').value;
+            const moodVal = document.getElementById('entry-mood-select').value;
+            const energyVal = parseInt(document.getElementById('entry-energy-slider').value);
+
+            if (!textVal) {
+                triggerToast("Please write some thoughts down on paper first!", "error");
+                return;
+            }
+
+            const computedHarmony = autoCalculateVibeHarmony(textVal);
+
+            const newMemoryCard = {
+                id: Date.now(),
+                title: titleVal || "A New Reflection",
+                text: textVal,
+                date: dateVal || new Date().toISOString().split('T')[0],
+                mood: moodVal,
+                energy: energyVal,
+                harmony: computedHarmony,
+                timestamp: new Date().toISOString()
+            };
+
+            diaryEntries.unshift(newMemoryCard);
+            persistDatabase();
+            renderEntriesFeed();
+            clearEditor();
+
+            triggerToast("Memory saved to scrapbook!", "success");
+        }
+
+        function renderEntriesFeed() {
+            const feedContainer = document.getElementById('entries-feed');
+            feedContainer.innerHTML = '';
+
+            if (diaryEntries.length === 0) {
+                feedContainer.innerHTML = `
+                    <div class="bg-white border-4 border-dashed border-cozy-ink/10 rounded-[2rem] p-10 text-center text-cozy-ink/30 font-bold">
+                        <i class="fa-solid fa-folder-open text-3xl mb-2"></i>
+                        <p class="text-xs">No memories recorded yet. Start writing your thoughts on the left!</p>
+                    </div>
+                `;
+                return;
+            }
+
+            const borderColors = {
+                joy: 'border-l-amber-400',
+                sadness: 'border-l-blue-400',
+                anger: 'border-l-rose-400',
+                fear: 'border-l-purple-400',
+                love: 'border-l-pink-400',
+                peace: 'border-l-emerald-400'
+            };
+
+            const moodLabels = {
+                joy: "✨ Joyful",
+                sadness: "🌧️ Weary / Sad",
+                anger: "🔥 Angry / Snappy",
+                fear: "🌪️ Apprehensive",
+                love: "💗 Tender / Cozy",
+                peace: "🌿 Calm / Peaceful"
+            };
+
+            // Loop and render every entry in a clean sequential list
+            diaryEntries.forEach(entry => {
+                const rawDate = new Date(entry.date);
+                const formattedDate = rawDate.toLocaleDateString('en-US', {
+                    month: 'short', day: 'numeric', year: 'numeric'
+                });
+
+                const ratingValue = entry.energy || 5;
+                const harmonyValue = entry.harmony || 0;
+
+                const card = document.createElement('div');
+                card.className = `relative bg-white border-4 border-cozy-ink rounded-[2rem] p-6 shadow-tactile border-l-[12px] ${borderColors[entry.mood] || 'border-l-cozy-ink'} transition-transform duration-300`;
+
+                card.innerHTML = `
+                    <!-- Right Corner action utilities -->
+                    <div class="absolute top-4 right-4 flex items-center gap-1.5 z-10">
+                        <button onclick="loadEntryToModify(${entry.id})" class="bg-cozy-bg hover:bg-cozy-border border-2 border-cozy-ink w-7 h-7 rounded-lg flex items-center justify-center transition" title="Edit entry">
+                            <i class="fa-solid fa-pen text-[10px]"></i>
+                        </button>
+                        <button onclick="deleteEntry(${entry.id})" class="bg-rose-50 hover:bg-rose-100 text-rose-700 border-2 border-cozy-ink w-7 h-7 rounded-lg flex items-center justify-center transition" title="Delete entry">
+                            <i class="fa-solid fa-trash-can text-[10px]"></i>
+                        </button>
+                    </div>
+
+                    <!-- Lined Ring Binding graphics inside entry card -->
+                    <div class="absolute left-0 top-6 bottom-6 flex flex-col justify-between pointer-events-none z-20">
+                        <span class="w-3 h-3 -ml-2 rounded-full bg-cozy-bg border-2 border-cozy-ink"></span>
+                        <span class="w-3 h-3 -ml-2 rounded-full bg-cozy-bg border-2 border-cozy-ink"></span>
+                        <span class="w-3 h-3 -ml-2 rounded-full bg-cozy-bg border-2 border-cozy-ink"></span>
+                    </div>
+
+                    <!-- Header -->
+                    <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-4 pb-2 border-b-2 border-cozy-ink/10 gap-2 pr-16 sm:pr-0">
+                        <div>
+                            <h3 class="text-xl font-black text-cozy-ink font-sans">${entry.title}</h3>
+                            <p class="text-[10px] font-bold text-cozy-ink/50">${moodLabels[entry.mood] || '🌿 Calm'} | ${formattedDate}</p>
+                        </div>
+
+                        <!-- Card ratings -->
+                        <div class="flex gap-2">
+                            <div class="bg-cozy-bg border-2 border-cozy-ink px-2.5 py-1 rounded-lg text-center">
+                                <span class="block text-[7px] font-black uppercase text-cozy-ink/40 leading-none">Energy</span>
+                                <span class="text-xs font-black text-cozy-joy">${ratingValue}/10</span>
+                            </div>
+                            <div class="bg-cozy-bg border-2 border-cozy-ink px-2.5 py-1 rounded-lg text-center">
+                                <span class="block text-[7px] font-black uppercase text-cozy-ink/40 leading-none">Harmony</span>
+                                <span class="text-xs font-black text-cozy-peace">${harmonyValue}%</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Paragraph formatted block -->
+                    <div class="font-sans text-sm md:text-base leading-relaxed text-cozy-ink/90 font-semibold">
+                        ${compileHighlightedHTML(entry.text)}
+                    </div>
+                `;
+
+                feedContainer.appendChild(card);
+            });
+        }
+
+        function loadEntryToModify(id) {
+            const entry = diaryEntries.find(e => e.id === id);
+            if (!entry) return;
+
+            document.getElementById('entry-title').value = entry.title;
+            document.getElementById('diary-editor').value = entry.text;
+            document.getElementById('entry-date').value = entry.date;
+            document.getElementById('entry-mood-select').value = entry.mood;
+            document.getElementById('entry-energy-slider').value = entry.energy || 5;
+
+            // Remove temporary card entry so user edits/re-files
+            diaryEntries = diaryEntries.filter(e => e.id !== id);
+            persistDatabase();
+            renderEntriesFeed();
+
+            updateRealtimeIndicators();
+            triggerToast("Loaded scrapbook entry into editor!", "info");
+        }
+
+        function deleteEntry(id) {
+            diaryEntries = diaryEntries.filter(e => e.id !== id);
+            persistDatabase();
+            renderEntriesFeed();
+            triggerToast("Entry removed.", "info");
+        }
+
+        function clearEditor() {
+            document.getElementById('entry-title').value = '';
+            document.getElementById('diary-editor').value = '';
+            setDefaultDate();
+            document.getElementById('entry-mood-select').value = 'peace';
+            document.getElementById('entry-energy-slider').value = 9;
+
+            updateRealtimeIndicators();
+            triggerToast("Lined paper cleared!", "info");
+        }
+
+        /* ==========================================================
+           STREAMING_CHUNK: Managing Vocabulary Registrations...
+           ========================================================== */
+        function toggleWordRegistrationForm() {
+            const container = document.getElementById('custom-word-registration-box');
+            container.classList.toggle('hidden');
+            container.classList.toggle('flex');
+        }
+
+        function filterLexiconCards(category) {
+            activeLexiconFilter = category;
+
+            const filterButtons = document.querySelectorAll('.lexicon-filter-btn');
+            filterButtons.forEach(btn => {
+                const label = btn.textContent.toLowerCase();
+                if ((category === 'all' && label === 'all words') || label.includes(category)) {
+                    btn.className = "lexicon-filter-btn px-3 py-1.5 rounded-xl text-xs font-black bg-cozy-ink text-white border-2 border-cozy-ink whitespace-nowrap";
+                } else {
+                    btn.className = "lexicon-filter-btn px-3 py-1.5 rounded-xl text-xs font-bold bg-cozy-bg text-cozy-ink/60 hover:bg-cozy-border border border-cozy-ink/15 whitespace-nowrap";
+                }
+            });
+
+            renderLexiconCards();
+        }
+
+        function renderLexiconCards() {
+            const wrapper = document.getElementById('lexicon-items-wrapper');
+            wrapper.innerHTML = '';
+
+            const styles = {
+                joy: 'bg-amber-50 text-cozy-joy border-cozy-joy/30',
+                sadness: 'bg-blue-50 text-cozy-sadness border-cozy-sadness/30',
+                anger: 'bg-rose-50 text-cozy-anger border-cozy-anger/30',
+                fear: 'bg-purple-50 text-cozy-fear border-cozy-fear/30',
+                love: 'bg-pink-50 text-cozy-love border-cozy-love/30',
+                peace: 'bg-emerald-50 text-cozy-peace border-cozy-peace/30'
+            };
+
+            for (const [emotion, words] of Object.entries(customLexicon)) {
+                if (activeLexiconFilter !== 'all' && activeLexiconFilter !== emotion) continue;
+
+                words.sort().forEach(word => {
+                    const tag = document.createElement('div');
+                    tag.className = `flex items-center justify-between px-3 py-1.5 rounded-xl text-[11px] font-black capitalize border-2 shadow-sm ${styles[emotion]}`;
+                    tag.innerHTML = `
+                        <span>${word}</span>
+                        <button onclick="removeLexiconWord('${emotion}', '${word}')" class="text-cozy-ink/30 hover:text-rose-600 transition ml-2">
+                            <i class="fa-solid fa-circle-xmark"></i>
+                        </button>
+                    `;
+                    wrapper.appendChild(tag);
+                });
+            }
+
+            if (!wrapper.children.length) {
+                wrapper.innerHTML = `<div class="col-span-full flex items-center justify-center text-xs font-bold text-cozy-ink/30 italic py-10">No registered vocabulary terms fit this selection.</div>`;
+            }
+        }
+
+        function addNewCustomWord() {
+            const wordInput = document.getElementById('input-new-word');
+            const categorySelect = document.getElementById('input-new-category');
+
+            const textWord = wordInput.value.trim().toLowerCase();
+            const categoryValue = categorySelect.value;
+
+            if (!textWord) {
+                triggerToast("Type a vocabulary term to register!", "error");
+                return;
+            }
+
+            // Check duplicates
+            let exists = false;
+            for (const [cat, list] of Object.entries(customLexicon)) {
+                if (list.includes(textWord)) {
+                    exists = true;
+                    break;
+                }
+            }
+
+            if (exists) {
+                triggerToast(`"${textWord}" is already in registry!`, "error");
+                return;
+            }
+
+            customLexicon[categoryValue].push(textWord);
+            persistDatabase();
+            renderLexiconCards();
+            updateRealtimeIndicators();
+
+            wordInput.value = '';
+            toggleWordRegistrationForm();
+            triggerToast(`Term "${textWord}" successfully registered!`, "success");
+        }
+
+        function removeLexiconWord(category, word) {
+            customLexicon[category] = customLexicon[category].filter(w => w !== word);
+            persistDatabase();
+            renderLexiconCards();
+            updateRealtimeIndicators();
+            triggerToast(`"${word}" unregistered.`, "info");
+        }
+
+        /* ==========================================================
+           STREAMING_CHUNK: Formatting admin configurations...
+           ========================================================== */
+        function toggleAudioSystem() {
+            isAudioEngineActive = !isAudioEngineActive;
+            const btn = document.getElementById('btn-audio-status');
+            
+            if (isAudioEngineActive) {
+                btn.className = "bg-cozy-accentMint text-cozy-ink border-2 border-cozy-ink px-4 py-1.5 rounded-xl text-xs font-black transition";
+                btn.innerHTML = `ON <i class="fa-solid fa-volume-high ml-1"></i>`;
+                triggerToast("Synthesizer audio online!", "success");
+            } else {
+                btn.className = "bg-rose-50 text-rose-700 border-2 border-cozy-ink px-4 py-1.5 rounded-xl text-xs font-black transition";
+                btn.innerHTML = `OFF <i class="fa-solid fa-volume-xmark ml-1"></i>`;
+                triggerToast("Audio feedback muted.", "info");
+            }
+        }
+
+        function adjustSystemVolume() {
+            const dbVal = parseFloat(document.getElementById('audio-volume').value);
+            if (isAudioInitialized) {
+                for (const synth of Object.values(chimeSynthesizers)) {
+                    synth.volume.value = dbVal;
+                }
+            }
+        }
+
+        function restoreInitialDatabase() {
+            customLexicon = JSON.parse(JSON.stringify(defaultLexicon));
+            persistDatabase();
+            renderLexiconCards();
+            updateRealtimeIndicators();
+            triggerToast("Default vocabularies restored!", "success");
+        }
+
+        function clearAllDiaryEntries() {
+            diaryEntries = [];
+            persistDatabase();
+            renderEntriesFeed();
+            triggerToast("Scrapbook feed cleared.", "info");
+        }
+
+        /* ==========================================================
+           STREAMING_CHUNK: Formatting beautiful UI messages...
+           ========================================================== */
+        function triggerToast(message, type = "success") {
+            const container = document.getElementById('toast-wrapper');
+            const toast = document.createElement('div');
+            
+            const categoryStyles = {
+                success: 'bg-emerald-50 border-emerald-400 text-emerald-950',
+                error: 'bg-rose-50 border-rose-400 text-rose-950',
+                info: 'bg-blue-50 border-blue-400 text-blue-950'
+            };
+
+            toast.className = `flex items-center gap-2 px-4 py-3 rounded-2xl border-3 text-xs font-black shadow-tactile pointer-events-auto transition-all duration-300 transform translate-y-3 opacity-0 bg-white border-cozy-ink ${categoryStyles[type]}`;
+            toast.innerHTML = `
+                <i class="fa-solid fa-star text-amber-400 animate-bounce"></i>
+                <span>${message}</span>
+            `;
+
+            container.appendChild(toast);
+
+            setTimeout(() => {
+                toast.classList.remove('translate-y-3', 'opacity-0');
+            }, 50);
+
+            setTimeout(() => {
+                toast.classList.add('translate-y-3', 'opacity-0');
+                setTimeout(() => toast.remove(), 400);
+            }, 3000);
+        }
+
+        function applySampleTemplate(type) {
+            const textEditor = document.getElementById('diary-editor');
+            const titleInput = document.getElementById('entry-title');
+            
+            const titleOptions = {
+                joy: "A Sunlit Spark Day",
+                sadness: "Melancholy Pensive Afternoon",
+                love: "Warm Hearth Reflection",
+                peace: "Quiet Harmony Serenity"
+            };
+            
+            textEditor.value = staticTemplates[type];
+            titleInput.value = titleOptions[type];
+            document.getElementById('entry-mood-select').value = type;
+
+            updateRealtimeIndicators();
+            triggerToast("Loaded scrapbook prompt template!", "success");
+        }
+    </script>
+</body>
+</html>
