@@ -27,7 +27,8 @@
                             anger: '#D62222',    
                             fear: '#7E22CE',     
                             love: '#DB2777',     
-                            peace: '#047857'     
+                            peace: '#047857',
+                            noun: '#92400E'      // Warm cocoa brown for nouns
                         }
                     },
                     fontFamily: {
@@ -321,6 +322,7 @@
                                 <option value="fear">🌪️ Fear (Royal Purple)</option>
                                 <option value="love">💗 Love (Strawberry Pink)</option>
                                 <option value="peace">🌿 Peace (Forest Green)</option>
+                                <option value="noun">☕ Nouns (Warm Brown)</option>
                             </select>
                         </div>
                         <div class="flex items-end">
@@ -342,6 +344,7 @@
                     <button onclick="filterLexiconCards('fear')" class="lexicon-filter-btn px-3 py-1.5 rounded-xl text-xs font-black bg-cozy-bg text-cozy-fear hover:bg-purple-50 border border-cozy-ink/15 whitespace-nowrap">Fear</button>
                     <button onclick="filterLexiconCards('love')" class="lexicon-filter-btn px-3 py-1.5 rounded-xl text-xs font-black bg-cozy-bg text-cozy-love hover:bg-pink-50 border border-cozy-ink/15 whitespace-nowrap">Love</button>
                     <button onclick="filterLexiconCards('peace')" class="lexicon-filter-btn px-3 py-1.5 rounded-xl text-xs font-black bg-cozy-bg text-cozy-peace hover:bg-emerald-50 border border-cozy-ink/15 whitespace-nowrap">Peace</button>
+                    <button onclick="filterLexiconCards('noun')" class="lexicon-filter-btn px-3 py-1.5 rounded-xl text-xs font-black bg-cozy-bg text-cozy-noun hover:bg-orange-50 border border-cozy-ink/15 whitespace-nowrap">Nouns</button>
                 </div>
 
                 <!-- Registry Grid representation -->
@@ -437,39 +440,87 @@
     <!-- STICKY TOAST NOTIFICATIONS -->
     <div id="toast-wrapper" class="fixed bottom-6 right-6 z-50 flex flex-col gap-3 pointer-events-none"></div>
 
+    <!-- DELETE CONFIRMATION MODAL -->
+    <div id="delete-confirm-modal" class="fixed inset-0 z-50 hidden items-center justify-center bg-cozy-ink/40 backdrop-blur-sm p-4">
+        <div class="bg-white border-4 border-cozy-ink rounded-[2rem] p-6 shadow-tactile max-w-sm w-full flex flex-col gap-4 transform transition-all">
+            <div class="flex items-center gap-3 border-b-2 border-dashed border-cozy-border pb-3">
+                <div class="w-12 h-12 rounded-xl bg-rose-100 flex items-center justify-center border-3 border-cozy-ink shadow-sm">
+                    <i class="fa-solid fa-trash-can text-xl text-rose-600"></i>
+                </div>
+                <div>
+                    <h3 class="text-xl font-black text-cozy-ink leading-tight">Delete Memory?</h3>
+                    <p class="text-[10px] font-bold text-cozy-ink/50 uppercase tracking-widest">Cannot be undone</p>
+                </div>
+            </div>
+            <p class="text-xs font-bold text-cozy-ink/70 leading-relaxed">Are you sure you want to permanently tear this page out of your scrapbook?</p>
+            <div class="flex gap-3 pt-2">
+                <button onclick="closeDeleteModal()" class="flex-1 bg-cozy-bg hover:bg-cozy-border text-cozy-ink border-3 border-cozy-ink py-2.5 rounded-xl text-xs font-black transition shadow-sm">Keep It</button>
+                <button onclick="confirmDeleteEntry()" class="flex-1 bg-rose-100 hover:bg-rose-200 text-rose-800 border-3 border-cozy-ink py-2.5 rounded-xl text-xs font-black transition shadow-sm">Tear It Out</button>
+            </div>
+        </div>
+    </div>
+
     <!-- MAIN SCRIPTS -->
     <script>
-        // Setup default emotional intermediate vocabularies
+        // Setup massive base emotional intermediate vocabularies (adjectives, adverbs, and verbs)
         let defaultLexicon = {
             joy: [
                 'happy', 'joy', 'joyful', 'excited', 'elated', 'cheerful', 'bright', 'amazing', 'wonderful', 
                 'smile', 'smiling', 'laugh', 'laughing', 'celebrate', 'glad', 'sunny', 'grateful', 'blessed', 
-                'thrive', 'delighted', 'radiant', 'blissful', 'glowing', 'beaming', 'vibrant', 'splendid', 'fabulous'
+                'thrive', 'delighted', 'radiant', 'blissful', 'glowing', 'beaming', 'vibrant', 'splendid', 'fabulous',
+                'jubilant', 'ecstatic', 'euphoric', 'majestic', 'triumph', 'triumphant', 'merry', 'cheery', 'optimistic',
+                'pleasant', 'proud', 'spark', 'gleeful', 'thrilled', 'satisfying', 'glorious', 'heavenly', 'jovial',
+                'bouncy', 'energetic', 'marvelous', 'sensational', 'magical', 'playful', 'zesty', 'bubbly', 'vivacious',
+                'perky', 'chipper', 'exultant', 'pleasurable', 'exhilarating', 'gleaming', 'lighthearted', 'carefree',
+                'rejoicing', 'overjoyed', 'gratified', 'charmed', 'elating', 'victorious', 'dynamic', 'bountiful', 'exult'
             ],
             sadness: [
                 'sad', 'lonely', 'sorrow', 'crying', 'cried', 'tears', 'gloomy', 'depressed', 'melancholy', 
                 'brokenhearted', 'heartbroken', 'hurting', 'pain', 'empty', 'hopeless', 'grieving', 'mourn',
-                'weary', 'downcast', 'somber', 'blue', 'teardrop', 'dispirited', 'forlorn', 'dejected', 'sigh', 'aching'
+                'weary', 'downcast', 'somber', 'blue', 'teardrop', 'dispirited', 'forlorn', 'dejected', 'sigh', 'aching',
+                'bleak', 'glum', 'weepy', 'pity', 'dismal', 'tragic', 'regret', 'hollow', 'bitter', 'dull', 'grim',
+                'woe', 'burden', 'helpless', 'solitary', 'miserable', 'discouraged', 'pessimistic', 'heavy', 'grieved',
+                'mournful', 'lamenting', 'weeping', 'heartsick', 'despairing', 'desolate', 'gloomed', 'heavyhearted',
+                'doleful', 'cheerless', 'woeful', 'crestfallen', 'morose', 'sadly', 'unhappy', 'melancholic', 'tearful'
             ],
             anger: [
                 'angry', 'mad', 'furious', 'rage', 'frustrated', 'irritated', 'hated', 'hate', 'pissed', 'bitter', 
                 'offended', 'annoyed', 'scream', 'screamed', 'yelled', 'hostile', 'disgust', 'resent',
-                'snappy', 'grumpy', 'fuming', 'seething', 'resentful', 'cross', 'indignant', 'fretting', 'heated'
+                'snappy', 'grumpy', 'fuming', 'seething', 'resentful', 'cross', 'indignant', 'fretting', 'heated',
+                'wrathful', 'crabby', 'prickly', 'touchy', 'testy', 'outrageous', 'provoked', 'spiteful', 'insulting',
+                'detesting', 'scorning', 'harsh', 'fierce', 'choleric', 'vexed', 'exasperated', 'irate', 'crossly',
+                'aggravated', 'enraged', 'infuriated', 'spite', 'hostility', 'madness', 'grumpiness', 'irritability', 'fury'
             ],
             fear: [
                 'scared', 'afraid', 'anxious', 'worried', 'dread', 'panic', 'terror', 'terrified', 'nervous', 'stress', 
                 'stressed', 'uneasy', 'horror', 'fright', 'apprehensive', 'suspicious', 'shaking', 'tense', 'jittery',
-                'unsteady', 'shaky', 'dreadful', 'panicked', 'fearful', 'distressed', 'overwhelmed', 'paralyzed'
+                'unsteady', 'shaky', 'dreadful', 'panicked', 'fearful', 'distressed', 'overwhelmed', 'paralyzed',
+                'shudder', 'tremble', 'shrink', 'coward', 'dismayed', 'shocked', 'alarmed', 'startled', 'creep',
+                'spooky', 'insecure', 'hypervigilant', 'doubtful', 'frightened', 'terrifying', 'intimidated', 'panicking',
+                'startling', 'breathless', 'threatened', 'apprehended', 'jitteriness', 'uneasiness', 'shakiness', 'tensity'
             ],
             love: [
                 'love', 'loved', 'loving', 'sweet', 'warmth', 'cozy', 'hug', 'hugs', 'kiss', 'affection', 
                 'adorable', 'cherish', 'companion', 'caring', 'sweetheart', 'adore', 'kind', 'kindness',
-                'passion', 'tender', 'compassionate', 'fond', 'devoted', 'admire', 'gentle', 'precious', 'empathy'
+                'passion', 'tender', 'compassionate', 'fond', 'devoted', 'admire', 'gentle', 'precious', 'empathy',
+                'companionable', 'fondness', 'devotion', 'admiration', 'respect', 'loyalty', 'snug', 'cuddle',
+                'friendly', 'grace', 'comforting', 'intimate', 'beloved', 'attached', 'valued', 'endearment', 'amorous',
+                'warmhearted', 'sweetly', 'devotedly', 'passionately', 'affectionate', 'caringly', 'adorably', 'endearing'
             ],
             peace: [
                 'peace', 'peaceful', 'calm', 'quiet', 'serene', 'tranquil', 'solitude', 'harmonious', 'balanced', 'rest', 
                 'resting', 'relax', 'relaxed', 'mindful', 'gently', 'softly', 'stillness', 'content', 'soothing',
-                'composed', 'untroubled', 'placid', 'mellow', 'smooth', 'silence', 'flow', 'steadiness', 'aligned'
+                'composed', 'untroubled', 'placid', 'mellow', 'smooth', 'silence', 'flow', 'steadiness', 'aligned',
+                'relieved', 'anchored', 'patient', 'easing', 'dreaming', 'breathing', 'sleeping', 'pacified', 'mild',
+                'steady', 'comforted', 'restful', 'serenely', 'quietly', 'calmly', 'tranquilly', 'peacefully', 'still'
+            ],
+            noun: [
+                'coffee', 'tea', 'blanket', 'book', 'journal', 'pen', 'rain', 'window', 'morning', 
+                'night', 'sun', 'moon', 'tree', 'flower', 'cat', 'dog', 'bird', 'music', 'home',
+                'room', 'bed', 'pillow', 'candle', 'garden', 'breeze', 'cloud', 'star', 'sky',
+                'water', 'fire', 'hearth', 'mug', 'cup', 'sweater', 'socks', 'story', 'poem',
+                'memory', 'dream', 'thought', 'mind', 'heart', 'soul', 'life', 'world', 'time',
+                'nature', 'mountain', 'ocean', 'river', 'forest', 'path', 'journey', 'friend', 'family'
             ]
         };
 
@@ -485,11 +536,82 @@
         let activeTab = 'home';
         let activeLexiconFilter = 'all';
         let customLexicon = {};
+        let pendingDeleteId = null;
         
         // Sound Engine Options
         let isAudioEngineActive = true;
         let isAudioInitialized = false;
         let chimeSynthesizers = {};
+
+        // Automatically generate English derivatives (adverbs, plurals, prefixes, suffixes) to dynamically support 2000+ words
+        function expandLexicon(base) {
+            let expanded = {};
+            for (const [category, words] of Object.entries(base)) {
+                let wordSet = new Set();
+                words.forEach(word => {
+                    const w = word.toLowerCase().trim();
+                    if (!w) return;
+                    wordSet.add(w);
+
+                    // Adverbs (e.g., -ly)
+                    if (w.endsWith('y')) {
+                        wordSet.add(w.slice(0, -1) + 'ily');
+                    } else if (w.endsWith('le')) {
+                        wordSet.add(w.slice(0, -1) + 'y');
+                    } else if (!w.endsWith('ly')) {
+                        wordSet.add(w + 'ly');
+                    }
+
+                    // Nouns & Adjectives (e.g., -ness, -ful, -less, -y, -ish)
+                    if (w.endsWith('y')) {
+                        wordSet.add(w.slice(0, -1) + 'iness');
+                        wordSet.add(w.slice(0, -1) + 'iful');
+                    } else {
+                        wordSet.add(w + 'ness');
+                        wordSet.add(w + 'ful');
+                        wordSet.add(w + 'less');
+                        wordSet.add(w + 'ish');
+                        wordSet.add(w + 'y');
+                    }
+
+                    // Verb conjugates (e.g., -ing, -ed, -s)
+                    if (w.endsWith('e')) {
+                        wordSet.add(w + 'd');
+                        wordSet.add(w.slice(0, -1) + 'ing');
+                        wordSet.add(w + 's');
+                    } else if (w.endsWith('y')) {
+                        wordSet.add(w.slice(0, -1) + 'ied');
+                        wordSet.add(w.slice(0, -1) + 'ying');
+                        wordSet.add(w.slice(0, -1) + 'ies');
+                    } else {
+                        wordSet.add(w + 'ed');
+                        wordSet.add(w + 'ing');
+                        wordSet.add(w + 's');
+                    }
+
+                    // Simple comparative forms (shorter adjectives)
+                    if (w.length < 7) {
+                        if (w.endsWith('e')) {
+                            wordSet.add(w + 'r');
+                            wordSet.add(w + 'st');
+                        } else if (w.endsWith('y')) {
+                            wordSet.add(w.slice(0, -1) + 'ier');
+                            wordSet.add(w.slice(0, -1) + 'iest');
+                        } else {
+                            wordSet.add(w + 'er');
+                            wordSet.add(w + 'est');
+                        }
+                    }
+
+                    // Common emotional prefixes
+                    wordSet.add('un' + w);
+                    wordSet.add('over' + w);
+                    wordSet.add('super' + w);
+                });
+                expanded[category] = Array.from(wordSet);
+            }
+            return expanded;
+        }
 
         window.onload = function() {
             loadDatabaseFromStorage();
@@ -527,9 +649,6 @@
             document.getElementById('entry-date').value = today;
         }
 
-        /* ==========================================================
-           STREAMING_CHUNK: Managing database states...
-           ========================================================== */
         function loadDatabaseFromStorage() {
             try {
                 // Entries Storage
@@ -584,9 +703,6 @@
             }
         }
 
-        /* ==========================================================
-           STREAMING_CHUNK: Handling active Tab routing...
-           ========================================================== */
         function switchTab(targetTab) {
             activeTab = targetTab;
 
@@ -621,9 +737,6 @@
             verifyAudioInitialization();
         }
 
-        /* ==========================================================
-           STREAMING_CHUNK: Core Highlight Compiling Engine...
-           ========================================================== */
         function updateRealtimeIndicators() {
             const titleText = document.getElementById('entry-title').value.trim() || "An Afternoon Breeze...";
             const editorText = document.getElementById('diary-editor').value;
@@ -676,9 +789,10 @@
                 return `<p class="text-cozy-ink/30 font-bold italic py-4 text-center text-xs">Your real-time highlighted thoughts will preview here as you type... 🌸</p>`;
             }
 
-            // Map vocabulary terms to their respective emotion categories
+            // Map fully expanded emotional words to their respective emotion categories
             const lexiconWordMap = {};
-            for (const [em, list] of Object.entries(customLexicon)) {
+            const expandedLexicon = expandLexicon(customLexicon);
+            for (const [em, list] of Object.entries(expandedLexicon)) {
                 list.forEach(w => {
                     lexiconWordMap[w.toLowerCase().trim()] = em;
                 });
@@ -716,7 +830,8 @@
                 anger: 'text-cozy-anger',
                 fear: 'text-cozy-fear',
                 love: 'text-cozy-love',
-                peace: 'text-cozy-peace'
+                peace: 'text-cozy-peace',
+                noun: 'text-cozy-noun'
             };
             return classes[emotion] || 'text-cozy-ink';
         }
@@ -728,7 +843,8 @@
             if (wordCount === 0) return 0;
 
             const map = {};
-            for (const [em, list] of Object.entries(customLexicon)) {
+            const expandedLexicon = expandLexicon(customLexicon);
+            for (const [em, list] of Object.entries(expandedLexicon)) {
                 list.forEach(w => { map[w] = em; });
             }
 
@@ -804,6 +920,12 @@
                 envelope: { attack: 0.02, decay: 0.18, sustain: 0, release: 0.18 }
             }).toDestination();
             chimeSynthesizers.peace.volume.value = -6;
+
+            chimeSynthesizers.noun = new Tone.PolySynth(Tone.Synth, {
+                oscillator: { type: "square" },
+                envelope: { attack: 0.01, decay: 0.1, sustain: 0, release: 0.1 }
+            }).toDestination();
+            chimeSynthesizers.noun.volume.value = -12;
         }
 
         function triggerShortChime(emotion) {
@@ -819,7 +941,8 @@
                     anger: ["F#5", "G5"],
                     fear: ["C#5", "D5", "G#5"],
                     love: ["A5", "C#6", "E6"],
-                    peace: ["G5", "B5", "D6"]
+                    peace: ["G5", "B5", "D6"],
+                    noun: ["C5", "E5"]
                 };
 
                 const notesToPlay = toneMelodies[emotion] || ["C5"];
@@ -989,10 +1112,28 @@
         }
 
         function deleteEntry(id) {
-            diaryEntries = diaryEntries.filter(e => e.id !== id);
-            persistDatabase();
-            renderEntriesFeed();
-            triggerToast("Entry removed.", "info");
+            pendingDeleteId = id;
+            const modal = document.getElementById('delete-confirm-modal');
+            modal.classList.remove('hidden');
+            modal.classList.add('flex');
+        }
+
+        function confirmDeleteEntry() {
+            if (pendingDeleteId) {
+                diaryEntries = diaryEntries.filter(e => e.id !== pendingDeleteId);
+                persistDatabase();
+                renderEntriesFeed();
+                triggerToast("Entry removed.", "info");
+                pendingDeleteId = null;
+            }
+            closeDeleteModal();
+        }
+
+        function closeDeleteModal() {
+            const modal = document.getElementById('delete-confirm-modal');
+            modal.classList.add('hidden');
+            modal.classList.remove('flex');
+            pendingDeleteId = null;
         }
 
         function clearEditor() {
@@ -1041,7 +1182,8 @@
                 anger: 'bg-rose-50 text-cozy-anger border-cozy-anger/30',
                 fear: 'bg-purple-50 text-cozy-fear border-cozy-fear/30',
                 love: 'bg-pink-50 text-cozy-love border-cozy-love/30',
-                peace: 'bg-emerald-50 text-cozy-peace border-cozy-peace/30'
+                peace: 'bg-emerald-50 text-cozy-peace border-cozy-peace/30',
+                noun: 'bg-orange-50 text-cozy-noun border-cozy-noun/30'
             };
 
             for (const [emotion, words] of Object.entries(customLexicon)) {
@@ -1192,7 +1334,7 @@
                 love: "Warm Hearth Reflection",
                 peace: "Quiet Harmony Serenity"
             };
-            
+
             textEditor.value = staticTemplates[type];
             titleInput.value = titleOptions[type];
             document.getElementById('entry-mood-select').value = type;
